@@ -33,7 +33,7 @@ spec:
         - name: {{ .Values.imagePullSecret | default "regcred" }}
       containers:
       - name: {{ .Values.fullnameOverride }}
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}
+        image: {{ .Values.image.repository }}
         imagePullPolicy: {{ .Values.image.pullPolicy | default "Always" }}
         resources:
           requests:
