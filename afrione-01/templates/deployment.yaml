@@ -1,65 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.fullnameOverride }}
+  name: {{ .Values.fullnameOverride}}
   namespace: {{ .Values.namespace }}
-  labels:
-    app: {{ .Values.fullnameOverride }}
-    {{- with .Values.labels }}
-    {{ toYaml . | nindent 4 }}
-    {{- end }}
 spec:
+  selector:
+   matchLabels:
+    app: {{ .Values.fullnameOverride }}
   replicas: {{ .Values.replicaCount | default 1 }}
   revisionHistoryLimit: 3
-  selector:
-    matchLabels:
-      app: {{ .Values.fullnameOverride }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 25%
       maxUnavailable: 25%
+  minReadySeconds: 60
   template:
     metadata:
       labels:
+        azure.workload.identity/use: "true"
         app: {{ .Values.fullnameOverride }}
-        {{- with .Values.templateLabels }}
-        {{ toYaml . | nindent 8 }}
-        {{- end }}
     spec:
-      serviceAccountName: {{ .Values.fullnameOverride }}
-      imagePullSecrets:
-        - name: {{ .Values.imagePullSecret | default "regcred" }}
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      {{- $secContext := .Values.secContext | default dict }}
+      {{- if $secContext.enabled }}
+      {{- with .Values.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 10 }}
+      {{- end }}
+      {{- end }}
       containers:
       - name: {{ .Values.fullnameOverride }}
         image: {{ .Values.image.repository }}
-        imagePullPolicy: {{ .Values.image.pullPolicy | default "Always" }}
-        resources:
-          requests:
-            memory: {{ .Values.resources.requests.memory | default "448Mi" | quote }}
-            cpu: {{ .Values.resources.requests.cpu | default "250m" | quote }}
-          limits:
-            memory: {{ .Values.resources.limits.memory | default "2000Mi" | quote }}
-            cpu: {{ .Values.resources.limits.cpu | default "1000m" | quote }}
-        ports:
-        - name: liveness-port
-          containerPort: {{ .Values.containerPort | default 8090 }}
-        - name: readiness-port
-          containerPort: {{ .Values.containerPort | default 8090 }}
-        readinessProbe:
-          httpGet:
-            path: {{ .Values.readinessProbe.path | default "/" }}
-            port: readiness-port
-          failureThreshold: {{ .Values.readinessProbe.failureThreshold | default 5 }}
-          periodSeconds: {{ .Values.readinessProbe.periodSeconds | default 10 }}
-          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds | default 60 }}
-        livenessProbe:
-          httpGet:
-            path: {{ .Values.livenessProbe.path | default "/" }}
-            port: liveness-port
-          failureThreshold: {{ .Values.livenessProbe.failureThreshold | default 5 }}
-          periodSeconds: {{ .Values.livenessProbe.periodSeconds | default 10 }}
-          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds | default 60 }}
+        imagePullPolicy: IfNotPresent
         env:
         {{- range .Values.env }}
         - name: {{ .name }}
@@ -69,6 +42,43 @@ spec:
           valueFrom:
             {{- toYaml .valueFrom | nindent 12 }}
           {{- end }}
+        {{- end }}
+        ports:
+        - containerPort: {{ .Values.containerPort}} 
+          name: http
+          protocol: TCP
+        {{- if .Values.lProbe.enabled }} #If enabled=true in the values.yaml, declare the probe parameters in the values.yaml
+        {{- with .Values.livenessProbe }}
+        livenessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.rProbe.enabled }}
+        {{- with .Values.readinessProbe }}
+        readinessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- end }}
+        resources:
+        {{- $resources := .Values.resources | default dict }}
+        {{- if $resources }}
+          requests:
+            cpu: {{ $resources.requests.cpu | default "0.2" | quote}}
+            memory: {{ $resources.requests.memory | default "500Mi" | quote}} 
+            ephemeral-storage: 200Mi 
+          limits:
+            cpu: {{ $resources.limits.cpu | default "0.5" | quote}}
+            memory: {{ $resources.limits.memory | default "1Gi" | quote}}
+            ephemeral-storage: 1Gi 
+        {{- else }}
+          requests:
+            cpu: 0.2
+            memory: 500Mi
+            ephemeral-storage: 200Mi
+          limits:
+            cpu: 0.5
+            memory: 1Gi
+            ephemeral-storage: 1Gi
         {{- end }}
         volumeMounts:
         {{- with .Values.volumeMounts }}
