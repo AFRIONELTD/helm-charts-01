@@ -1,68 +1,83 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "afrione-01.fullname" . }}
+  name: {{ .Values.fullnameOverride }}
+  namespace: {{ .Values.namespace }}
   labels:
-    {{- include "afrione-01.labels" . | nindent 4 }}
+    app: {{ .Values.fullnameOverride }}
+    {{- with .Values.labels }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
+  replicas: {{ .Values.replicaCount | default 1 }}
+  minReadySeconds: {{ .Values.minReadySeconds | default 45 }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit | default 10 }}
   selector:
     matchLabels:
-      {{- include "afrione-01.selectorLabels" . | nindent 6 }}
+      app: {{ .Values.fullnameOverride }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge | default "25%" }}
+      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable | default "25%" }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
-        {{- include "afrione-01.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
+        app: {{ .Values.fullnameOverride }}
+        {{- with .Values.templateLabels }}
+        {{ toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      serviceAccountName: {{ .Values.fullnameOverride }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      serviceAccountName: {{ include "afrione-01.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        - name: {{ .Values.imagePullSecret | default "regcred" }}
       containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
-          livenessProbe:
-            {{- toYaml .Values.livenessProbe | nindent 12 }}
-          readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
-          volumeMounts:
-            {{- toYaml . | nindent 12 }}
+      - name: {{ .Values.fullnameOverride }}
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}
+        imagePullPolicy: {{ .Values.image.pullPolicy | default "Always" }}
+        resources:
+          requests:
+            memory: {{ .Values.resources.requests.memory | default "448Mi" | quote }}
+            cpu: {{ .Values.resources.requests.cpu | default "250m" | quote }}
+          limits:
+            memory: {{ .Values.resources.limits.memory | default "2000Mi" | quote }}
+            cpu: {{ .Values.resources.limits.cpu | default "1000m" | quote }}
+        ports:
+        - name: liveness-port
+          containerPort: {{ .Values.containerPort | default 8090 }}
+        - name: readiness-port
+          containerPort: {{ .Values.containerPort | default 8090 }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.readinessProbe.path | default "/" }}
+            port: readiness-port
+          failureThreshold: {{ .Values.readinessProbe.failureThreshold | default 5 }}
+          periodSeconds: {{ .Values.readinessProbe.periodSeconds | default 10 }}
+          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds | default 60 }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.livenessProbe.path | default "/" }}
+            port: liveness-port
+          failureThreshold: {{ .Values.livenessProbe.failureThreshold | default 5 }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds | default 10 }}
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds | default 60 }}
+        env:
+        {{- range .Values.env }}
+        - name: {{ .name }}
+          {{- if .value }}
+          value: {{ .value | quote }}
+          {{- else if .valueFrom }}
+          valueFrom:
+            {{- toYaml .valueFrom | nindent 12 }}
           {{- end }}
-      {{- with .Values.volumes }}
+        {{- end }}
+        volumeMounts:
+        {{- with .Values.volumeMounts }}
+        {{ toYaml . | nindent 10 }}
+        {{- end }}
       volumes:
-        {{- toYaml . | nindent 8 }}
+      {{- with .Values.volumes }}
+      {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

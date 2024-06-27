@@ -1,15 +1,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "afrione-01.fullname" . }}
+  name: {{ .Values.fullnameOverride }}
+  namespace: {{ .Values.namespace }}
   labels:
-    {{- include "afrione-01.labels" . | nindent 4 }}
+    app: {{ .Values.fullnameOverride}}
 spec:
-  type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
+    - name: http
+      targetPort: {{ .Values.containerPort }}
+  {{- $service := .Values.service | default dict }}
+  {{- if $service }}
+      port: {{ $service.port | default 80 }}
+  type: {{ $service.type | default "ClusterIP" | quote }}
+  {{- else }}
+      port: 80
+  type: ClusterIP
+  {{- end }}
   selector:
-    {{- include "afrione-01.selectorLabels" . | nindent 4 }}
+    app: {{ .Values.fullnameOverride}}
