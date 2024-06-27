@@ -20,7 +20,6 @@ spec:
       labels:
         app: {{ .Values.fullnameOverride }}
     spec:
-      serviceAccountName: {{ .Values.serviceAccountName }}
       {{- $secContext := .Values.secContext | default dict }}
       {{- if $secContext.enabled }}
       {{- with .Values.securityContext }}
