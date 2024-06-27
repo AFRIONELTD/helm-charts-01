@@ -10,16 +10,15 @@ metadata:
     {{- end }}
 spec:
   replicas: {{ .Values.replicaCount | default 1 }}
-  minReadySeconds: {{ .Values.minReadySeconds | default 45 }}
-  revisionHistoryLimit: {{ .Values.revisionHistoryLimit | default 10 }}
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: {{ .Values.fullnameOverride }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge | default "25%" }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable | default "25%" }}
+      maxSurge: 25%
+      maxUnavailable: 25%
   template:
     metadata:
       labels:
