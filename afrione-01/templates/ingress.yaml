@@ -4,9 +4,9 @@ metadata:
   name: {{ .Values.fullnameOverride }}
   namespace: {{ .Values.namespace }}
   annotations:
-  {{- with .Values.ingress.annotations }}
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
 spec:
   ingressClassName: {{ .Values.ingress.ingressClassName | default "alb"}}
   rules:
