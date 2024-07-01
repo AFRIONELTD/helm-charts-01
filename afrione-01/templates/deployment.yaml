@@ -46,13 +46,13 @@ spec:
           name: http
           protocol: TCP
         {{- if .Values.lProbe.enabled }} #If enabled=true in the values.yaml, declare the probe parameters in the values.yaml
-        {{- with .Values.livenessProbe }}
+        {{- with .Values.lProbe }}
         livenessProbe:
           {{- toYaml . | nindent 10 }}
         {{- end }}
         {{- end }}
         {{- if .Values.rProbe.enabled }}
-        {{- with .Values.readinessProbe }}
+        {{- with .Values.rProbe }}
         readinessProbe:
           {{- toYaml . | nindent 10 }}
         {{- end }}
