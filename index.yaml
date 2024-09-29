@@ -3,7 +3,7 @@ entries:
   afrione-01:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-29T21:33:42.390717+01:00"
+    created: "2024-09-29T21:56:32.016334+01:00"
     description: A Helm chart for Kubernetes
     digest: dcd70c4a588eb5e45a5154dcc10250055ccee49a9a81eff4cf8d95bb50072d91
     name: afrione-01
@@ -14,12 +14,12 @@ entries:
   afrione-prod:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-09-29T21:33:42.391893+01:00"
+    created: "2024-09-29T21:56:32.017537+01:00"
     description: A Helm chart for Kubernetes
-    digest: 439971f947f64c9c7cfd6aa4b2889fc4f282c5da2d7c9520a1a07fb8140270c4
+    digest: 5f40af2ddbea634b762fe6da38e7f978a6474fb0bb1ed5fc94c2f6b5cfe86009
     name: afrione-prod
     type: application
     urls:
     - https://afrioneltd.github.io/helm-charts/afrione-prod-0.1.0.tgz
     version: 0.1.0
-generated: "2024-09-29T21:33:42.386845+01:00"
+generated: "2024-09-29T21:56:32.008352+01:00"
