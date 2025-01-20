@@ -19,7 +19,7 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.ingressClassName | default "alb"}}
   rules:
-    - host: "{{ .Values.ingress.host }}.afrione.co"
+    - host: "{{ .Values.ingress.host }}.{{ .Values.ingress.domain }}"
       http:
         paths:
           - backend:
