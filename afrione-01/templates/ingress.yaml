@@ -19,7 +19,11 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.ingressClassName | default "alb"}}
   rules:
+  {{- if .Values.ingress.host }}
     - host: "{{ .Values.ingress.host }}.{{ .Values.ingress.domain }}"
+  {{- else }}
+    - host: "{{ .Values.ingress.domain }}"
+  {{- end }}
       http:
         paths:
           - backend:
